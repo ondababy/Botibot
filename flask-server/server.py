@@ -1,27 +1,27 @@
-# from flask import Flask, jsonify
-# from flask_cors import CORS
+from flask import Flask
+from flask_cors import CORS
+from app.database.database import init_database
+from app.routes.inventory import inventory_bp
 
-# app = Flask(__name__)
-# CORS(app)
-
-# @app.route('/api/data', methods=['GET'])
-# def get_data():
-#     return jsonify({"message": "Hello from Flask!", "data": [1, 2, 3]})
-
-# if __name__ == '__main__':
-#     app.run(debug=True, port=5000)
-
-from app import create_app
-import os
-
-# Create Flask application
-app = create_app()
+def create_app():
+    app = Flask(__name__)
+    
+    CORS(app, resources={
+        r"/api/*": {
+            "origins": ["http://localhost:5173"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"]
+        }
+    })
+    
+    # Initialize database
+    init_database()
+    
+    # Register blueprints
+    app.register_blueprint(inventory_bp, url_prefix='/api/inventory')
+    
+    return app
 
 if __name__ == '__main__':
-    # Get configuration from environment
-    debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
-    port = int(os.getenv('FLASK_PORT', 5000))
-    host = os.getenv('FLASK_HOST', '0.0.0.0')
-    
-    print(f"Starting Botibot on {host}:{port}")
-    app.run(host=host, port=port, debug=debug_mode)
+    app = create_app()
+    app.run(debug=True, host='0.0.0.0', port=5000)

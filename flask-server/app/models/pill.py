@@ -1,116 +1,136 @@
-
 import sqlite3
-from typing import List, Optional, Dict
-from app.database.connection import get_db_connection
+from typing import List, Optional
+from app.database.database import get_db_connection
 
 class Pill:
-    def __init__(self, id=None, name=None, compartment=None, current_count=0, 
-                 max_capacity=30, low_stock_threshold=5, pill_color='#FFFFFF'):
-        self.id = id
+    def __init__(self, name: str, max_capacity: int, current_count: int = 0, 
+                 low_stock_threshold: int = 10, description: str = "",
+                 dosage: str = "", frequency: str = "", 
+                 compartment_number: Optional[int] = None, pill_id: Optional[int] = None):
+        self.id = pill_id
         self.name = name
-        self.compartment = compartment
-        self.current_count = current_count
         self.max_capacity = max_capacity
+        self.current_count = current_count
         self.low_stock_threshold = low_stock_threshold
-        self.pill_color = pill_color
-    
-    @property
-    def is_low_stock(self) -> bool:
-        return self.current_count <= self.low_stock_threshold
+        self.description = description
+        self.dosage = dosage
+        self.frequency = frequency
+        self.compartment_number = compartment_number
     
     @property
     def is_empty(self) -> bool:
         return self.current_count == 0
     
     @property
-    def fill_percentage(self) -> float:
-        if self.max_capacity == 0:
-            return 0
-        return (self.current_count / self.max_capacity) * 100
+    def is_low_stock(self) -> bool:
+        return self.current_count <= self.low_stock_threshold and not self.is_empty
     
-    def to_dict(self) -> Dict:
-        return {
-            'id': self.id,
-            'name': self.name,
-            'compartment': self.compartment,
-            'current_count': self.current_count,
-            'max_capacity': self.max_capacity,
-            'low_stock_threshold': self.low_stock_threshold,
-            'pill_color': self.pill_color,
-            'is_low_stock': self.is_low_stock,
-            'is_empty': self.is_empty,
-            'fill_percentage': self.fill_percentage
-        }
+    def save(self) -> bool:
+        """Save pill to database"""
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                
+                if self.id is None:  # New pill
+                    cursor.execute('''
+                        INSERT INTO pills (name, max_capacity, current_count, low_stock_threshold,
+                                         description, dosage, frequency, compartment_number)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (self.name, self.max_capacity, self.current_count, self.low_stock_threshold,
+                          self.description, self.dosage, self.frequency, self.compartment_number))
+                    self.id = cursor.lastrowid
+                else:  # Update existing
+                    cursor.execute('''
+                        UPDATE pills SET name=?, max_capacity=?, current_count=?, low_stock_threshold=?,
+                                       description=?, dosage=?, frequency=?, compartment_number=?,
+                                       updated_at=CURRENT_TIMESTAMP
+                        WHERE id=?
+                    ''', (self.name, self.max_capacity, self.current_count, self.low_stock_threshold,
+                          self.description, self.dosage, self.frequency, self.compartment_number, self.id))
+                
+                conn.commit()
+                return True
+        except Exception as e:
+            print(f"Error saving pill: {e}")
+            return False
+    
+    def delete(self) -> bool:
+        """Delete pill from database"""
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('DELETE FROM pills WHERE id=?', (self.id,))
+                conn.commit()
+                return True
+        except Exception:
+            return False
     
     @classmethod
     def get_all(cls) -> List['Pill']:
         """Get all pills from database"""
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            SELECT id, name, compartment, current_count, max_capacity, 
-                   low_stock_threshold, pill_color 
-            FROM pills ORDER BY compartment
-        ''')
-        
         pills = []
-        for row in cursor.fetchall():
-            pill = cls(*row)
-            pills.append(pill)
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('SELECT * FROM pills ORDER BY name')
+                rows = cursor.fetchall()
+                
+                for row in rows:
+                    pill = cls(
+                        name=row['name'],
+                        max_capacity=row['max_capacity'],
+                        current_count=row['current_count'],
+                        low_stock_threshold=row['low_stock_threshold'],
+                        description=row['description'],
+                        dosage=row['dosage'],
+                        frequency=row['frequency'],
+                        compartment_number=row['compartment_number'],
+                        pill_id=row['id']
+                    )
+                    pills.append(pill)
+        except Exception as e:
+            print(f"Error getting pills: {e}")
         
-        conn.close()
         return pills
     
     @classmethod
     def get_by_id(cls, pill_id: int) -> Optional['Pill']:
         """Get pill by ID"""
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        try:
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('SELECT * FROM pills WHERE id=?', (pill_id,))
+                row = cursor.fetchone()
+                
+                if row:
+                    return cls(
+                        name=row['name'],
+                        max_capacity=row['max_capacity'],
+                        current_count=row['current_count'],
+                        low_stock_threshold=row['low_stock_threshold'],
+                        description=row['description'],
+                        dosage=row['dosage'],
+                        frequency=row['frequency'],
+                        compartment_number=row['compartment_number'],
+                        pill_id=row['id']
+                    )
+        except Exception as e:
+            print(f"Error getting pill by ID: {e}")
         
-        cursor.execute('''
-            SELECT id, name, compartment, current_count, max_capacity, 
-                   low_stock_threshold, pill_color 
-            FROM pills WHERE id = ?
-        ''', (pill_id,))
-        
-        row = cursor.fetchone()
-        conn.close()
-        
-        if row:
-            return cls(*row)
         return None
     
-    def save(self) -> bool:
-        """Save pill to database"""
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        try:
-            if self.id:
-                # Update existing pill
-                cursor.execute('''
-                    UPDATE pills SET name=?, compartment=?, current_count=?, 
-                           max_capacity=?, low_stock_threshold=?, pill_color=?
-                    WHERE id=?
-                ''', (self.name, self.compartment, self.current_count,
-                      self.max_capacity, self.low_stock_threshold, 
-                      self.pill_color, self.id))
-            else:
-                # Insert new pill
-                cursor.execute('''
-                    INSERT INTO pills (name, compartment, current_count, 
-                                     max_capacity, low_stock_threshold, pill_color)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                ''', (self.name, self.compartment, self.current_count,
-                      self.max_capacity, self.low_stock_threshold, self.pill_color))
-                self.id = cursor.lastrowid
-            
-            conn.commit()
-            return True
-            
-        except sqlite3.Error as e:
-            print(f"Database error: {e}")
-            return False
-        finally:
-            conn.close()
+    def to_dict(self) -> dict:
+        """Convert pill to dictionary"""
+        return {
+            'id': self.id,
+            'name': self.name,
+            'max_capacity': self.max_capacity,
+            'current_count': self.current_count,
+            'low_stock_threshold': self.low_stock_threshold,
+            'description': self.description,
+            'dosage': self.dosage,
+            'frequency': self.frequency,
+            'compartment_number': self.compartment_number,
+            'is_empty': self.is_empty,
+            'is_low_stock': self.is_low_stock
+        }
