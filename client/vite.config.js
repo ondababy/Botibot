@@ -15,7 +15,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:5000', // Flask backend
+        target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
         logLevel: 'debug', 
