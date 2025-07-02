@@ -1,61 +1,111 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Heart, Wifi } from 'lucide-react';
+import React, { useState } from 'react';
+import { Heart, Menu, X } from 'lucide-react';
+import NavigationMenu from './Navigation';
 
-const Header = () => {
+const Header = ({ onNavigationAction }) => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
   const currentTime = new Date().toLocaleString('en-US', {
-    weekday: 'long',
-    month: 'long',
+    weekday: 'short',
+    month: 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
   });
 
+  const handleMenuAction = (action) => {
+    setIsMenuOpen(false);
+    if (onNavigationAction) {
+      onNavigationAction(action);
+    }
+  };
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-2xl p-4 flex justify-between items-center shadow-lg border border-white/20"
-    >
-      <motion.div 
-        className="flex items-center gap-3"
-        whileHover={{ scale: 1.05 }}
-        transition={{ type: "spring", stiffness: 300 }}
+    <>
+      <div
+        className="glass-card"
+        style={{
+          padding: '12px 20px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          height: '100%',
+          position: 'relative',
+          zIndex: 1000,
+          opacity: 1,
+          transition: 'opacity 0.3s ease'
+        }}
       >
-        <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center shadow-lg">
-          <Heart className="w-4 h-4 text-white" />
-        </div>
-        <span className="text-xl font-bold text-blue-700">HealthBot Pro</span>
-      </motion.div>
-
-      <motion.div 
-        className="bg-amber-50 px-4 py-2 rounded-full border border-amber-200"
-        initial={{ scale: 0.9 }}
-        animate={{ scale: 1 }}
-        transition={{ delay: 0.2 }}
-      >
-        <span className="text-sm font-medium text-gray-700">{currentTime}</span>
-      </motion.div>
-
-      <motion.div 
-        className="flex items-center gap-2 bg-green-50 px-4 py-2 rounded-full border border-green-200"
-        animate={{ scale: [1, 1.05, 1] }}
-        transition={{ duration: 2, repeat: Infinity }}
-      >
-        <motion.div 
-          className="w-3 h-3 bg-green-500 rounded-full shadow-lg"
-          animate={{ 
-            boxShadow: [
-              '0 0 5px rgba(34, 197, 94, 0.5)',
-              '0 0 15px rgba(34, 197, 94, 0.8)',
-              '0 0 5px rgba(34, 197, 94, 0.5)'
-            ]
+        {/* Hamburger Menu Button */}
+        <button
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          className="hamburger-button"
+          style={{
+            background: 'transparent',
+            border: 'none',
+            padding: '12px',
+            borderRadius: '12px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.2s ease',
+            minWidth: '44px',
+            minHeight: '44px'
           }}
-          transition={{ duration: 2, repeat: Infinity }}
-        />
-        <span className="text-xs font-semibold text-green-700">System Online</span>
-      </motion.div>
-    </motion.div>
+        >
+          <div style={{ 
+            transform: isMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 0.3s ease'
+          }}>
+            {isMenuOpen ? (
+              <X className="w-6 h-6" style={{ color: 'var(--denim-blue-dark)' }} />
+            ) : (
+              <Menu className="w-6 h-6" style={{ color: 'var(--denim-blue-dark)' }} />
+            )}
+          </div>
+        </button>
+
+        {/* Logo */}
+        <div className="logo-container" style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '12px',
+          transition: 'transform 0.2s ease' 
+        }}>
+          <div className="logo-icon">
+            <Heart className="w-5 h-5 text-white" />
+          </div>
+          <span className="logo-text">BOTIBOT</span>
+        </div>
+
+        {/* Time Display */}
+        <div className="header-badge">
+          {currentTime}
+        </div>
+
+        {/* System Status */}
+        <div className="header-badge system-status">
+          <div
+            style={{
+              width: '8px',
+              height: '8px',
+              backgroundColor: '#52a788',
+              borderRadius: '50%',
+              animation: 'pulse 2s infinite'
+            }}
+          />
+          <span style={{ fontSize: '12px', fontWeight: 600 }}>Online</span>
+        </div>
+      </div>
+
+      {/* Navigation Menu */}
+      <NavigationMenu 
+        isOpen={isMenuOpen} 
+        onClose={() => setIsMenuOpen(false)}
+        onMenuAction={handleMenuAction}
+      />
+    </>
   );
 };
 
