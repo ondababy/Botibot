@@ -1,8 +1,7 @@
 import axios from 'axios';
 import { Platform } from 'react-native';
 
-// Replace this with your computer's actual IP address
-const YOUR_COMPUTER_IP = '192.168.1.XXX'; // <-- CHANGE THIS TO YOUR ACTUAL IP
+const baseUrl = '192.168.1.105';
 
 const getApiBaseUrl = () => {
   // For iOS Simulator
@@ -17,7 +16,7 @@ const getApiBaseUrl = () => {
   
   // For physical devices (your mobile phone)
   if (__DEV__) {
-    return `http://${YOUR_COMPUTER_IP}:5000/api/inventory`;
+    return `http://${baseUrl}:5000/api/inventory`;
   }
   
   // Production URL
@@ -31,51 +30,38 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // 10 second timeout for mobile networks
+  timeout: 10000,
 });
 
-// Request interceptor (for adding auth tokens if needed)
+
+// Add request interceptor for authentication if needed
 api.interceptors.request.use(
   (config) => {
-    // You can add authentication tokens here if needed
+    // Add auth token if available
     // const token = AsyncStorage.getItem('authToken');
     // if (token) {
     //   config.headers.Authorization = `Bearer ${token}`;
     // }
-    
-    console.log('Making request to:', config.baseURL + config.url);
     return config;
   },
   (error) => {
-    console.error('Request error:', error);
     return Promise.reject(error);
   }
 );
 
-// Response interceptor for better error handling
+// Add response interceptor for error handling
 api.interceptors.response.use(
-  (response) => {
-    console.log('API Response:', response.status, response.config.url);
-    return response;
-  },
+  (response) => response,
   (error) => {
     if (error.response) {
-      // Server responded with error status (4xx, 5xx)
-      console.error('API Error Response:', {
-        status: error.response.status,
-        data: error.response.data,
-        url: error.config?.url
-      });
+      // Server responded with error status
+      console.error('API Error:', error.response.data);
     } else if (error.request) {
-      // Request was made but no response received (network issues)
-      console.error('Network Error:', {
-        message: error.message,
-        url: error.config?.url,
-        baseURL: error.config?.baseURL
-      });
+      // Request was made but no response received
+      console.error('Network Error:', error.message);
     } else {
       // Something else happened
-      console.error('Request Setup Error:', error.message);
+      console.error('Error:', error.message);
     }
     return Promise.reject(error);
   }
@@ -108,26 +94,6 @@ export const pillService = {
   
   // Get inventory summary
   getInventorySummary: () => api.get('/summary'),
-};
-
-// Test connection function (optional but helpful for debugging)
-export const testConnection = async () => {
-  try {
-    console.log('Testing connection to:', API_BASE_URL);
-    const response = await api.get('/summary');
-    return { 
-      success: true, 
-      message: 'Connected successfully',
-      baseURL: API_BASE_URL 
-    };
-  } catch (error) {
-    return { 
-      success: false, 
-      message: error.message,
-      baseURL: API_BASE_URL,
-      isNetworkError: !error.response 
-    };
-  }
 };
 
 export default api;

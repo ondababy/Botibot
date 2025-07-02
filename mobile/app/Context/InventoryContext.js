@@ -115,3 +115,5 @@ export const InventoryProvider = ({ children }) => {
     </InventoryContext.Provider>
   );
 };
+
+export default InventoryProvider;

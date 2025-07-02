@@ -1,32 +1,44 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { InventoryProvider } from './context/InventoryContext';
-import Navbar from './components/Layout/Navbar';
-import Dashboard from './pages/Dashboard';
-import PillList from './pages/PillList';
-import AddPill from './pages/AddPill';
-import PillDetails from './pages/PillDetails';
-import LowStock from './pages/LowStock';
-import './App.css';
+import React, { useState, useEffect } from 'react';
+import { AnimatePresence } from 'framer-motion';
+import Main from './display/Main';
 
 function App() {
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Kiosk mode optimizations
+  useEffect(() => {
+    const disableContextMenu = (e) => e.preventDefault();
+    const disableSelection = (e) => e.preventDefault();
+    
+    document.addEventListener('contextmenu', disableContextMenu);
+    document.addEventListener('selectstart', disableSelection);
+
+    return () => {
+      document.removeEventListener('contextmenu', disableContextMenu);
+      document.removeEventListener('selectstart', disableSelection);
+    };
+  }, []);
+
+  const handleNavigation = (view) => {
+    switch (view) {
+      case 'settings':
+        setShowSettings(true);
+        break;
+      default:
+        console.log(`Navigate to: ${view}`);
+    }
+  };
+
   return (
-    <InventoryProvider>
-      <Router>
-        <div className="App">
-          <Navbar />
-          <main className="main-content">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/pills" element={<PillList />} />
-              <Route path="/pills/add" element={<AddPill />} />
-              <Route path="/pills/:id" element={<PillDetails />} />
-              <Route path="/low-stock" element={<LowStock />} />
-            </Routes>
-          </main>
-        </div>
-      </Router>
-    </InventoryProvider>
+    <>
+      <Main onNavigate={handleNavigation} />
+      
+      <AnimatePresence>
+        {showSettings && (
+          <div>Settings Overlay (implement when needed)</div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 

@@ -6,13 +6,16 @@
 //   plugins: [react()],
 // })
 
-
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+  ],
   server: {
+    host: '0.0.0.0',
+    port: 3000,
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
@@ -22,4 +25,20 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    target: 'es2015',
+    cssCodeSplit: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          animations: ['framer-motion', 'react-spring'],
+          charts: ['recharts']
+        }
+      }
+    }
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'framer-motion', 'lucide-react']
+  }
 });
