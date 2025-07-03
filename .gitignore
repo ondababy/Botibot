@@ -22,3 +22,7 @@ Thumbs.db
 *.bak
 *.tmp
 *.cache
+
+# Vercel
+.vercel
+/client/dist/

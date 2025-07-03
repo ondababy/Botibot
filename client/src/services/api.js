@@ -1,27 +1,13 @@
 import axios from 'axios';
-import { Platform } from 'react-native';
-
-// Replace this with your computer's actual IP address
-const YOUR_COMPUTER_IP = '192.168.1.XXX'; // <-- CHANGE THIS TO YOUR ACTUAL IP
 
 const getApiBaseUrl = () => {
-  // For iOS Simulator
-  if (__DEV__ && Platform.OS === 'ios') {
-    return 'http://localhost:5000/api/inventory';
+  // For web development
+  if (import.meta.env.DEV) {
+    return import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/inventory';
   }
   
-  // For Android Emulator
-  if (__DEV__ && Platform.OS === 'android') {
-    return 'http://10.0.2.2:5000/api/inventory';
-  }
-  
-  // For physical devices (your mobile phone)
-  if (__DEV__) {
-    return `http://${YOUR_COMPUTER_IP}:5000/api/inventory`;
-  }
-  
-  // Production URL
-  return 'https://your-production-api.com/api/inventory';
+  // Production URL - Uses environment variable or fallback
+  return import.meta.env.VITE_API_BASE_URL_PROD || '/api/inventory';
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -31,14 +17,14 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // 10 second timeout for mobile networks
+  timeout: 10000, // 10 second timeout
 });
 
 // Request interceptor (for adding auth tokens if needed)
 api.interceptors.request.use(
   (config) => {
     // You can add authentication tokens here if needed
-    // const token = AsyncStorage.getItem('authToken');
+    // const token = localStorage.getItem('authToken');
     // if (token) {
     //   config.headers.Authorization = `Bearer ${token}`;
     // }
